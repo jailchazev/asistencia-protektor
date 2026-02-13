@@ -7,7 +7,19 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Select from "@/components/ui/Select";
 import Alert from "@/components/ui/Alert";
-import { UserSession, Usuario, Rol } from "@/types";
+
+// ✅ Importar runtime + types correctamente
+import { UserSession, Usuario, ROL_VALUES, ROL } from "@/types";
+import type { Rol } from "@/types";
+
+type FormData = {
+  username: string;
+  password: string;
+  nombres: string;
+  apellidos: string;
+  rol: Rol;
+  activo: boolean;
+};
 
 export default function UsuariosPage() {
   const router = useRouter();
@@ -19,12 +31,12 @@ export default function UsuariosPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     username: "",
     password: "",
     nombres: "",
     apellidos: "",
-    rol: "agente",
+    rol: ROL.agente,
     activo: true,
   });
 
@@ -38,10 +50,13 @@ export default function UsuariosPage() {
           return;
         }
         const data = await res.json();
-        if (data.user.rol !== "admin") {
+
+        // ✅ usar ROL.admin (runtime real)
+        if (data.user.rol !== ROL.admin) {
           router.push("/mi-asistencia");
           return;
         }
+
         setUser(data.user);
       } catch (error) {
         console.error("Error al cargar usuario:", error);
@@ -70,6 +85,7 @@ export default function UsuariosPage() {
     if (user) {
       cargarUsuarios();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -102,7 +118,7 @@ export default function UsuariosPage() {
           password: "",
           nombres: "",
           apellidos: "",
-          rol: "agente",
+          rol: ROL.agente,
           activo: true,
         });
         cargarUsuarios();
@@ -121,7 +137,7 @@ export default function UsuariosPage() {
       password: "",
       nombres: usuario.nombres,
       apellidos: usuario.apellidos,
-      rol: usuario.rol,
+      rol: usuario.rol as Rol,
       activo: usuario.activo,
     });
     setShowModal(true);
@@ -144,7 +160,8 @@ export default function UsuariosPage() {
     }
   };
 
-  const rolOptions = Object.values(Rol).map((r) => ({
+  // ✅ Reemplazo correcto (sin Object.values(Rol))
+  const rolOptions = ROL_VALUES.map((r) => ({
     value: r,
     label: r.replace("_", " ").toUpperCase(),
   }));
@@ -171,7 +188,7 @@ export default function UsuariosPage() {
                 password: "",
                 nombres: "",
                 apellidos: "",
-                rol: "agente",
+                rol: ROL.agente,
                 activo: true,
               });
               setShowModal(true);
@@ -184,8 +201,16 @@ export default function UsuariosPage() {
           </Button>
         </div>
 
-        {error && <Alert variant="error" className="mb-4">{error}</Alert>}
-        {success && <Alert variant="success" className="mb-4">{success}</Alert>}
+        {error && (
+          <Alert variant="error" className="mb-4">
+            {error}
+          </Alert>
+        )}
+        {success && (
+          <Alert variant="success" className="mb-4">
+            {success}
+          </Alert>
+        )}
 
         {/* Tabla */}
         <div className="card overflow-hidden">
@@ -207,15 +232,11 @@ export default function UsuariosPage() {
                     <td className="px-4 py-3 text-sm text-gray-900">
                       {u.nombres} {u.apellidos}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-900 capitalize">
-                      {u.rol.replace("_", " ")}
-                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900 capitalize">{u.rol.replace("_", " ")}</td>
                     <td className="px-4 py-3 text-sm">
                       <span
                         className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          u.activo
-                            ? "bg-green-100 text-green-800"
-                            : "bg-red-100 text-red-800"
+                          u.activo ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
                         }`}
                       >
                         {u.activo ? "Activo" : "Inactivo"}
@@ -223,12 +244,14 @@ export default function UsuariosPage() {
                     </td>
                     <td className="px-4 py-3 text-sm">
                       <div className="flex gap-2">
-                        <button
-                          onClick={() => handleEdit(u)}
-                          className="text-primary-600 hover:text-primary-800"
-                        >
+                        <button onClick={() => handleEdit(u)} className="text-primary-600 hover:text-primary-800">
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                            />
                           </svg>
                         </button>
                         <button
@@ -237,7 +260,12 @@ export default function UsuariosPage() {
                         >
                           {u.activo ? (
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"
+                              />
                             </svg>
                           ) : (
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -271,6 +299,7 @@ export default function UsuariosPage() {
                     required
                     disabled={!!editingUser}
                   />
+
                   <Input
                     label={editingUser ? "Contraseña (dejar en blanco para no cambiar)" : "Contraseña"}
                     type="password"
@@ -278,18 +307,21 @@ export default function UsuariosPage() {
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     required={!editingUser}
                   />
+
                   <Input
                     label="Nombres"
                     value={formData.nombres}
                     onChange={(e) => setFormData({ ...formData, nombres: e.target.value })}
                     required
                   />
+
                   <Input
                     label="Apellidos"
                     value={formData.apellidos}
                     onChange={(e) => setFormData({ ...formData, apellidos: e.target.value })}
                     required
                   />
+
                   <Select
                     label="Rol"
                     value={formData.rol}
@@ -297,6 +329,7 @@ export default function UsuariosPage() {
                     options={rolOptions}
                     required
                   />
+
                   <div className="flex items-center gap-2">
                     <input
                       type="checkbox"
@@ -311,11 +344,7 @@ export default function UsuariosPage() {
                   </div>
 
                   <div className="flex gap-3 justify-end pt-4">
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      onClick={() => setShowModal(false)}
-                    >
+                    <Button type="button" variant="secondary" onClick={() => setShowModal(false)}>
                       Cancelar
                     </Button>
                     <Button type="submit" variant="primary">
