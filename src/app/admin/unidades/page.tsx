@@ -8,7 +8,8 @@ import Input from "@/components/ui/Input";
 import Alert from "@/components/ui/Alert";
 
 // ✅ Import runtime correcto
-import { UserSession, Unidad, } from "@/types";
+import { UserSession, Unidad, ROL } from "@/types";
+
 
 type FormData = {
   nombre: string;

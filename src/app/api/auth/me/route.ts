@@ -1,11 +1,15 @@
+export const runtime = "nodejs";
+
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAccessToken } from "@/lib/auth";
 import { cookies } from "next/headers";
 
-export async function GET(request: NextRequest) {
+// ✅ Fuerza Node.js (evita Edge Runtime y errores con bcryptjs)
+export const runtime = "nodejs";
+
+export async function GET(_request: NextRequest) {
   try {
-    const cookieStore = cookies();
-    const token = cookieStore.get("accessToken")?.value;
+    const token = cookies().get("accessToken")?.value;
 
     if (!token) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
