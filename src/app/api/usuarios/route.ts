@@ -1,53 +1,14 @@
 export const runtime = "nodejs";
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { hashPassword } from "@/lib/auth";
 import { crearUsuarioSchema } from "@/lib/validations";
-import { esAdmin } from "@/types";
+import { hashPassword } from "@/lib/auth";
 
-// GET - Listar usuarios
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    // Verificar permisos
-    const userHeader = request.headers.get("x-user");
-    if (!userHeader) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
-
-    const user = JSON.parse(userHeader);
-    if (!esAdmin(user.rol)) {
-      return NextResponse.json(
-        { error: "No tiene permisos para ver usuarios" },
-        { status: 403 }
-      );
-    }
-
-    const { searchParams } = new URL(request.url);
-    const busqueda = searchParams.get("busqueda");
-    const rol = searchParams.get("rol");
-    const activo = searchParams.get("activo");
-
-    const where: any = {};
-
-    if (busqueda) {
-      where.OR = [
-        { username: { contains: busqueda, mode: "insensitive" } },
-        { nombres: { contains: busqueda, mode: "insensitive" } },
-        { apellidos: { contains: busqueda, mode: "insensitive" } },
-      ];
-    }
-
-    if (rol) {
-      where.rol = rol;
-    }
-
-    if (activo !== null && activo !== undefined) {
-      where.activo = activo === "true";
-    }
-
     const usuarios = await prisma.usuario.findMany({
-      where,
+      orderBy: { createdAt: "desc" },
       select: {
         id: true,
         username: true,
@@ -57,63 +18,43 @@ export async function GET(request: NextRequest) {
         activo: true,
         createdAt: true,
       },
-      orderBy: { createdAt: "desc" },
     });
 
     return NextResponse.json({ usuarios });
   } catch (error) {
-    console.error("Error al listar usuarios:", error);
-    return NextResponse.json(
-      { error: "Error interno del servidor" },
-      { status: 500 }
-    );
+    console.error("GET /api/usuarios error:", error);
+    return NextResponse.json({ error: "Error al listar usuarios" }, { status: 500 });
   }
 }
 
-// POST - Crear usuario
-export async function POST(request: NextRequest) {
+export async function POST(req: Request) {
   try {
-    // Verificar permisos
-    const userHeader = request.headers.get("x-user");
-    if (!userHeader) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
+    const json = await req.json();
 
-    const user = JSON.parse(userHeader);
-    if (!esAdmin(user.rol)) {
+    const parsed = crearUsuarioSchema.safeParse(json);
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: "No tiene permisos para crear usuarios" },
-        { status: 403 }
-      );
-    }
-
-    const body = await request.json();
-
-    const result = crearUsuarioSchema.safeParse(body);
-    if (!result.success) {
-      return NextResponse.json(
-        { error: "Datos inválidos", details: result.error.flatten() },
+        {
+          error: "Datos inválidos",
+          details: parsed.error.issues.map((i) => ({
+            path: i.path.join("."),
+            message: i.message,
+          })),
+        },
         { status: 400 }
       );
     }
 
-    const { username, password, nombres, apellidos, rol, activo } = result.data;
+    const { username, password, nombres, apellidos, rol, activo } = parsed.data;
 
-    // Verificar si el username ya existe
-    const existente = await prisma.usuario.findUnique({
-      where: { username },
-    });
-
-    if (existente) {
-      return NextResponse.json(
-        { error: "El nombre de usuario ya está en uso" },
-        { status: 400 }
-      );
+    const existe = await prisma.usuario.findUnique({ where: { username } });
+    if (existe) {
+      return NextResponse.json({ error: "El usuario ya existe" }, { status: 409 });
     }
 
     const passwordHash = await hashPassword(password);
 
-    const nuevoUsuario = await prisma.usuario.create({
+    const usuario = await prisma.usuario.create({
       data: {
         username,
         passwordHash,
@@ -133,12 +74,9 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({ usuario: nuevoUsuario }, { status: 201 });
+    return NextResponse.json({ usuario }, { status: 201 });
   } catch (error) {
-    console.error("Error al crear usuario:", error);
-    return NextResponse.json(
-      { error: "Error interno del servidor" },
-      { status: 500 }
-    );
+    console.error("POST /api/usuarios error:", error);
+    return NextResponse.json({ error: "Error al crear usuario" }, { status: 500 });
   }
 }
