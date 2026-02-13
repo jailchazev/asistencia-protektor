@@ -24,7 +24,7 @@ export default function UsuariosPage() {
     password: "",
     nombres: "",
     apellidos: "",
-    rol: Rol.agente,
+    rol: "agente",
     activo: true,
   });
 
@@ -38,7 +38,7 @@ export default function UsuariosPage() {
           return;
         }
         const data = await res.json();
-        if (data.user.rol !== Rol.admin) {
+        if (data.user.rol !== "admin") {
           router.push("/mi-asistencia");
           return;
         }
@@ -102,7 +102,7 @@ export default function UsuariosPage() {
           password: "",
           nombres: "",
           apellidos: "",
-          rol: Rol.agente,
+          rol: "agente",
           activo: true,
         });
         cargarUsuarios();
@@ -171,7 +171,7 @@ export default function UsuariosPage() {
                 password: "",
                 nombres: "",
                 apellidos: "",
-                rol: Rol.agente,
+                rol: "agente",
                 activo: true,
               });
               setShowModal(true);

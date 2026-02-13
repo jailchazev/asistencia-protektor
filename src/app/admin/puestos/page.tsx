@@ -35,7 +35,7 @@ export default function PuestosPage() {
           return;
         }
         const data = await res.json();
-        if (data.user.rol !== Rol.admin) {
+        if (data.user.rol !== "admin") {
           router.push("/mi-asistencia");
           return;
         }
