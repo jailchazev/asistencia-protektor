@@ -1,8 +1,21 @@
+// 🔥 Importar Rol desde Prisma como TYPE
 export type { Rol } from "@prisma/client";
 import type { Rol } from "@prisma/client";
 
+// ✅ OBJETO RUNTIME (esto arregla TODOS los errores de Rol.admin en producción)
+export const ROL = {
+  admin: "admin",
+  supervisor: "supervisor",
+  agente: "agente",
+  jefe: "jefe",
+  gerente: "gerente",
+  coordinador: "coordinador",
+  asistente: "asistente",
+  centro_de_control: "centro_de_control",
+  oficina: "oficina",
+} as const;
 
-// ✅ Mantener Turno local (si tu Prisma usa Turno, luego lo alineamos también)
+// ✅ Mantener Turno local
 export enum Turno {
   DIA = "DIA",
   NOCHE = "NOCHE",
@@ -65,7 +78,7 @@ export interface UserSession {
   puestoId: string | null;
 }
 
-// ✅ Roles con permisos (mismos valores que en Prisma)
+// ✅ Roles con permisos (alineados con Prisma)
 export const ROLES_CON_HISTORIAL: Rol[] = [
   "admin",
   "asistente",
