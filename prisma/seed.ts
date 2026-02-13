@@ -158,10 +158,6 @@ async function main() {
   // ========== USUARIOS ==========
   console.log("👤 Creando usuarios...");
 
-  // ✅ Asignación por defecto (para que el login tenga unidad/puesto)
-  const defaultUnidadId = unidadLima.id;
-  const defaultPuestoId = puestoLima1.id;
-
   const admin = await prisma.usuario.create({
     data: {
       username: "admin",
@@ -170,8 +166,6 @@ async function main() {
       apellidos: "Sistema",
       rol: Rol.admin,
       activo: true,
-      unidadId: defaultUnidadId,
-      puestoId: defaultPuestoId,
     },
   });
 
@@ -183,8 +177,6 @@ async function main() {
       apellidos: "Rodríguez",
       rol: Rol.supervisor,
       activo: true,
-      unidadId: unidadArequipa.id,
-      puestoId: puestoArequipa1.id,
     },
   });
 
@@ -196,8 +188,6 @@ async function main() {
       apellidos: "García",
       rol: Rol.agente,
       activo: true,
-      unidadId: unidadLima.id,
-      puestoId: puestoLima1.id,
     },
   });
 
@@ -209,8 +199,6 @@ async function main() {
       apellidos: "López",
       rol: Rol.jefe,
       activo: true,
-      unidadId: unidadTrujillo.id,
-      puestoId: puestoTrujillo1.id,
     },
   });
 
@@ -222,8 +210,6 @@ async function main() {
       apellidos: "Fernández",
       rol: Rol.gerente,
       activo: true,
-      unidadId: unidadCusco.id,
-      puestoId: puestoCusco1.id,
     },
   });
 
@@ -235,8 +221,6 @@ async function main() {
       apellidos: "Torres",
       rol: Rol.coordinador,
       activo: true,
-      unidadId: unidadPiura.id,
-      puestoId: puestoPiura1.id,
     },
   });
 
@@ -248,8 +232,6 @@ async function main() {
       apellidos: "Díaz",
       rol: Rol.asistente,
       activo: true,
-      unidadId: unidadChiclayo.id,
-      puestoId: puestoChiclayo1.id,
     },
   });
 
@@ -261,8 +243,6 @@ async function main() {
       apellidos: "Vargas",
       rol: Rol.centro_de_control,
       activo: true,
-      unidadId: unidadLima.id,
-      puestoId: puestoLima1.id,
     },
   });
 
@@ -274,8 +254,6 @@ async function main() {
       apellidos: "Mendoza",
       rol: Rol.oficina,
       activo: true,
-      unidadId: unidadIquitos.id,
-      puestoId: puestoIquitos1.id,
     },
   });
 
@@ -304,7 +282,8 @@ async function main() {
     },
   });
 
-  console.log("✅ Seed completado");
+  console.log("✅ Asistencia demo creada");
+  console.log("🎉 SEED COMPLETADO EXITOSAMENTE");
 }
 
 main()
