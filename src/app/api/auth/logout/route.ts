@@ -1,0 +1,13 @@
+import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
+
+export async function POST() {
+  const cookieStore = cookies();
+
+  cookieStore.delete("accessToken");
+  cookieStore.delete("refreshToken");
+  cookieStore.delete("unidadId");
+  cookieStore.delete("puestoId");
+
+  return NextResponse.json({ success: true });
+}

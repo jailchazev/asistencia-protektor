@@ -1,0 +1,100 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Rol {
+  admin
+  supervisor
+  agente
+  jefe
+  gerente
+  coordinador
+  asistente
+  centro_de_control
+  oficina
+}
+
+enum Turno {
+  DIA
+  NOCHE
+}
+
+model Usuario {
+  id           String   @id @default(uuid())
+  username     String   @unique
+  passwordHash String
+  nombres      String
+  apellidos    String
+  rol          Rol      @default(agente)
+  activo       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  asistencias Asistencia[]
+
+  @@map("usuarios")
+}
+
+model Unidad {
+  id        String   @id @default(uuid())
+  nombre    String
+  ciudad    String
+  direccion String?
+  activo    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  puestos     Puesto[]
+  asistencias Asistencia[]
+
+  @@map("unidades")
+}
+
+model Puesto {
+  id        String   @id @default(uuid())
+  unidadId  String
+  nombre    String
+  activo    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  unidad      Unidad       @relation(fields: [unidadId], references: [id])
+  asistencias Asistencia[]
+
+  @@map("puestos")
+}
+
+model Asistencia {
+  id              String    @id @default(uuid())
+  userId          String
+  unidadId        String
+  puestoId        String
+  turno           Turno
+  fechaTurno      String
+  checkInAt       DateTime?
+  checkOutAt      DateTime?
+  horasTrabajadas Float?
+  lat             Float?
+  lng             Float?
+  ciudadDetectada String?
+  ip              String?
+  deviceInfo      String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  usuario Usuario @relation(fields: [userId], references: [id])
+  unidad  Unidad  @relation(fields: [unidadId], references: [id])
+  puesto  Puesto  @relation(fields: [puestoId], references: [id])
+
+  @@unique([userId, unidadId, puestoId, fechaTurno, turno])
+  @@index([fechaTurno])
+  @@index([userId])
+  @@index([unidadId])
+  @@index([puestoId])
+  @@map("asistencias")
+}
