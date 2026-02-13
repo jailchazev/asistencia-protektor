@@ -1,15 +1,6 @@
-export enum Rol {
-  admin = "admin",
-  supervisor = "supervisor",
-  agente = "agente",
-  jefe = "jefe",
-  gerente = "gerente",
-  coordinador = "coordinador",
-  asistente = "asistente",
-  centro_de_control = "centro_de_control",
-  oficina = "oficina",
-}
+import type { Rol } from "@prisma/client";
 
+// ✅ Mantener Turno local (si tu Prisma usa Turno, luego lo alineamos también)
 export enum Turno {
   DIA = "DIA",
   NOCHE = "NOCHE",
@@ -68,27 +59,28 @@ export interface UserSession {
   nombres: string;
   apellidos: string;
   rol: Rol;
-  unidadId?: string;
-  puestoId?: string;
+  unidadId: string | null;
+  puestoId: string | null;
 }
 
-export const ROLES_CON_HISTORIAL = [
-  Rol.admin,
-  Rol.asistente,
-  Rol.jefe,
-  Rol.gerente,
-  Rol.centro_de_control,
+// ✅ Roles con permisos (mismos valores que en Prisma)
+export const ROLES_CON_HISTORIAL: Rol[] = [
+  "admin",
+  "asistente",
+  "jefe",
+  "gerente",
+  "centro_de_control",
 ];
 
-export const ROLES_CON_MAPA = [
-  Rol.admin,
-  Rol.asistente,
-  Rol.jefe,
-  Rol.gerente,
-  Rol.centro_de_control,
+export const ROLES_CON_MAPA: Rol[] = [
+  "admin",
+  "asistente",
+  "jefe",
+  "gerente",
+  "centro_de_control",
 ];
 
-export const ROLES_ADMIN = [Rol.admin];
+export const ROLES_ADMIN: Rol[] = ["admin"];
 
 export function tieneAccesoHistorial(rol: Rol): boolean {
   return ROLES_CON_HISTORIAL.includes(rol);
