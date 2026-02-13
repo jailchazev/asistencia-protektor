@@ -20,6 +20,26 @@ type FormData = {
   activo: boolean;
 };
 
+// ✅ Extrae error real (Zod / API / fallback)
+function getApiErrorMessage(data: any, fallback = "Datos inválidos") {
+  // tu backend podría devolver { error: "...", details: [...] }
+  const details = data?.details ?? data?.issues ?? data?.errors;
+
+  if (Array.isArray(details) && details.length > 0) {
+    const first = details[0];
+    const path =
+      Array.isArray(first?.path) ? first.path.join(".") : first?.path || "";
+    const msg = first?.message || first?.msg || "";
+    if (path && msg) return `${path}: ${msg}`;
+    if (msg) return msg;
+  }
+
+  if (typeof data?.error === "string") return data.error;
+  if (typeof data?.message === "string") return data.message;
+
+  return fallback;
+}
+
 export default function UsuariosPage() {
   const router = useRouter();
   const [user, setUser] = useState<UserSession | null>(null);
@@ -39,7 +59,6 @@ export default function UsuariosPage() {
     activo: true,
   });
 
-  // Cargar usuario y verificar permisos
   useEffect(() => {
     const cargarUsuario = async () => {
       try {
@@ -63,7 +82,6 @@ export default function UsuariosPage() {
     cargarUsuario();
   }, [router]);
 
-  // Cargar usuarios
   const cargarUsuarios = async () => {
     try {
       const res = await fetch("/api/usuarios");
@@ -92,8 +110,9 @@ export default function UsuariosPage() {
       const url = editingUser ? `/api/usuarios/${editingUser.id}` : "/api/usuarios";
       const method = editingUser ? "PUT" : "POST";
 
+      // ✅ si editas y password está vacío -> NO enviarlo
       const body = editingUser
-        ? { ...formData, password: formData.password || undefined }
+        ? { ...formData, password: formData.password?.trim() ? formData.password : undefined }
         : formData;
 
       const res = await fetch(url, {
@@ -102,7 +121,8 @@ export default function UsuariosPage() {
         body: JSON.stringify(body),
       });
 
-      const data = await res.json();
+      // ✅ res puede no ser json en errores 500
+      const data = await res.json().catch(() => ({}));
 
       if (res.ok) {
         setSuccess(editingUser ? "Usuario actualizado correctamente" : "Usuario creado correctamente");
@@ -118,7 +138,7 @@ export default function UsuariosPage() {
         });
         cargarUsuarios();
       } else {
-        setError(data.error || "Error al guardar usuario");
+        setError(getApiErrorMessage(data, "Datos inválidos"));
       }
     } catch (e) {
       setError("Error de conexión. Intente nuevamente.");
@@ -149,12 +169,13 @@ export default function UsuariosPage() {
         body: JSON.stringify({ activo: !usuario.activo }),
       });
 
+      const data = await res.json().catch(() => ({}));
+
       if (res.ok) {
         setSuccess(`Usuario ${usuario.activo ? "desactivado" : "activado"} correctamente`);
         cargarUsuarios();
       } else {
-        const data = await res.json().catch(() => ({}));
-        setError(data.error || "Error al cambiar estado del usuario");
+        setError(getApiErrorMessage(data, "Error al cambiar estado del usuario"));
       }
     } catch (e) {
       setError("Error al cambiar estado del usuario");
@@ -212,7 +233,6 @@ export default function UsuariosPage() {
           </Alert>
         )}
 
-        {/* Tabla */}
         <div className="card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -289,7 +309,6 @@ export default function UsuariosPage() {
           </div>
         </div>
 
-        {/* Modal */}
         {showModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">

@@ -8,7 +8,6 @@ import Input from "@/components/ui/Input";
 import Select from "@/components/ui/Select";
 import Alert from "@/components/ui/Alert";
 
-// ✅ Import runtime correcto
 import { UserSession, Puesto, Unidad, ROL } from "@/types";
 
 type FormData = {
@@ -16,6 +15,25 @@ type FormData = {
   nombre: string;
   activo: boolean;
 };
+
+// ✅ Extrae error real (Zod / API / fallback)
+function getApiErrorMessage(data: any, fallback = "Datos inválidos") {
+  const details = data?.details ?? data?.issues ?? data?.errors;
+
+  if (Array.isArray(details) && details.length > 0) {
+    const first = details[0];
+    const path =
+      Array.isArray(first?.path) ? first.path.join(".") : first?.path || "";
+    const msg = first?.message || first?.msg || "";
+    if (path && msg) return `${path}: ${msg}`;
+    if (msg) return msg;
+  }
+
+  if (typeof data?.error === "string") return data.error;
+  if (typeof data?.message === "string") return data.message;
+
+  return fallback;
+}
 
 export default function PuestosPage() {
   const router = useRouter();
@@ -43,16 +61,14 @@ export default function PuestosPage() {
           return;
         }
         const data = await res.json();
-
-        // ✅ usar ROL.admin
         if (data.user.rol !== ROL.admin) {
           router.push("/mi-asistencia");
           return;
         }
-
         setUser(data.user);
       } catch (error) {
         console.error("Error al cargar usuario:", error);
+        router.push("/login");
       }
     };
 
@@ -61,12 +77,18 @@ export default function PuestosPage() {
 
   const cargarDatos = async () => {
     try {
-      const [resPuestos, resUnidades] = await Promise.all([fetch("/api/puestos"), fetch("/api/unidades")]);
+      const [resPuestos, resUnidades] = await Promise.all([
+        fetch("/api/puestos"),
+        fetch("/api/unidades"),
+      ]);
 
-      if (resPuestos.ok && resUnidades.ok) {
+      if (resPuestos.ok) {
         const dataPuestos = await resPuestos.json();
-        const dataUnidades = await resUnidades.json();
         setPuestos(dataPuestos.puestos);
+      }
+
+      if (resUnidades.ok) {
+        const dataUnidades = await resUnidades.json();
         setUnidades(dataUnidades.unidades);
       }
     } catch (error) {
@@ -77,9 +99,7 @@ export default function PuestosPage() {
   };
 
   useEffect(() => {
-    if (user) {
-      cargarDatos();
-    }
+    if (user) cargarDatos();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
@@ -92,13 +112,19 @@ export default function PuestosPage() {
       const url = editingPuesto ? `/api/puestos/${editingPuesto.id}` : "/api/puestos";
       const method = editingPuesto ? "PUT" : "POST";
 
+      // ✅ safety: trim nombre
+      const payload = {
+        ...formData,
+        nombre: formData.nombre.trim(),
+      };
+
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
 
       if (res.ok) {
         setSuccess(editingPuesto ? "Puesto actualizado correctamente" : "Puesto creado correctamente");
@@ -107,7 +133,7 @@ export default function PuestosPage() {
         setFormData({ unidadId: "", nombre: "", activo: true });
         cargarDatos();
       } else {
-        setError(data.error || "Error al guardar puesto");
+        setError(getApiErrorMessage(data, "Datos inválidos"));
       }
     } catch (error) {
       setError("Error de conexión. Intente nuevamente.");
@@ -125,6 +151,9 @@ export default function PuestosPage() {
   };
 
   const handleToggleActivo = async (puesto: Puesto) => {
+    setError("");
+    setSuccess("");
+
     try {
       const res = await fetch(`/api/puestos/${puesto.id}`, {
         method: "PUT",
@@ -132,19 +161,26 @@ export default function PuestosPage() {
         body: JSON.stringify({ activo: !puesto.activo }),
       });
 
+      const data = await res.json().catch(() => ({}));
+
       if (res.ok) {
         setSuccess(`Puesto ${puesto.activo ? "desactivado" : "activado"} correctamente`);
         cargarDatos();
+      } else {
+        setError(getApiErrorMessage(data, "Error al cambiar estado del puesto"));
       }
     } catch (error) {
       setError("Error al cambiar estado del puesto");
     }
   };
 
-  const unidadOptions = unidades.map((u) => ({
-    value: u.id,
-    label: `${u.nombre} (${u.ciudad})`,
-  }));
+  const unidadOptions = [
+    { value: "", label: "Seleccione una unidad" }, // ✅ para que se vea claro
+    ...unidades.map((u) => ({
+      value: u.id,
+      label: `${u.nombre} (${u.ciudad})`,
+    })),
+  ];
 
   if (isLoading || !user) {
     return (
@@ -256,7 +292,9 @@ export default function PuestosPage() {
           <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-xl shadow-xl max-w-lg w-full">
               <div className="p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">{editingPuesto ? "Editar Puesto" : "Nuevo Puesto"}</h2>
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                  {editingPuesto ? "Editar Puesto" : "Nuevo Puesto"}
+                </h2>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <Select
