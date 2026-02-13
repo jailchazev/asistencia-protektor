@@ -7,9 +7,10 @@ import Header from "./Header";
 import { UserSession } from "@/types";
 
 interface DashboardLayoutProps {
-  children: React.ReactNode;
   user: UserSession;
+  children?: React.ReactNode;
 }
+
 
 export default function DashboardLayout({ children, user }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
