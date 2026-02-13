@@ -1,7 +1,3 @@
-// ✅ Rol desde Prisma SOLO como type (no existe en runtime)
-import type { Rol as PrismaRol } from "@prisma/client";
-export type Rol = PrismaRol;
-
 // ✅ Runtime constants (SI existen en runtime)
 export const ROL = {
   admin: "admin",
@@ -28,8 +24,8 @@ export const ROL_VALUES = [
   ROL.oficina,
 ] as const;
 
+// ✅ Tipo Rol derivado de runtime (NO duplica, NO Prisma)
 export type Rol = (typeof ROL_VALUES)[number];
-
 
 // ✅ Mantener Turno local
 export enum Turno {
