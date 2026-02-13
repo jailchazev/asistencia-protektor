@@ -1,8 +1,8 @@
-// 🔥 Importar Rol desde Prisma como TYPE
-export type { Rol } from "@prisma/client";
-import type { Rol } from "@prisma/client";
+// ✅ Rol desde Prisma SOLO como type (no existe en runtime)
+import type { Rol as PrismaRol } from "@prisma/client";
+export type Rol = PrismaRol;
 
-// ✅ OBJETO RUNTIME (esto arregla TODOS los errores de Rol.admin en producción)
+// ✅ Runtime constants (SI existen en runtime)
 export const ROL = {
   admin: "admin",
   supervisor: "supervisor",
@@ -14,6 +14,19 @@ export const ROL = {
   centro_de_control: "centro_de_control",
   oficina: "oficina",
 } as const;
+
+// ✅ Lista runtime para UI (reemplaza Object.values(Rol))
+export const ROL_VALUES: Rol[] = [
+  ROL.admin,
+  ROL.supervisor,
+  ROL.agente,
+  ROL.jefe,
+  ROL.gerente,
+  ROL.coordinador,
+  ROL.asistente,
+  ROL.centro_de_control,
+  ROL.oficina,
+];
 
 // ✅ Mantener Turno local
 export enum Turno {
@@ -78,24 +91,24 @@ export interface UserSession {
   puestoId: string | null;
 }
 
-// ✅ Roles con permisos (alineados con Prisma)
+// ✅ Roles con permisos
 export const ROLES_CON_HISTORIAL: Rol[] = [
-  "admin",
-  "asistente",
-  "jefe",
-  "gerente",
-  "centro_de_control",
+  ROL.admin,
+  ROL.asistente,
+  ROL.jefe,
+  ROL.gerente,
+  ROL.centro_de_control,
 ];
 
 export const ROLES_CON_MAPA: Rol[] = [
-  "admin",
-  "asistente",
-  "jefe",
-  "gerente",
-  "centro_de_control",
+  ROL.admin,
+  ROL.asistente,
+  ROL.jefe,
+  ROL.gerente,
+  ROL.centro_de_control,
 ];
 
-export const ROLES_ADMIN: Rol[] = ["admin"];
+export const ROLES_ADMIN: Rol[] = [ROL.admin];
 
 export function tieneAccesoHistorial(rol: Rol): boolean {
   return ROLES_CON_HISTORIAL.includes(rol);
