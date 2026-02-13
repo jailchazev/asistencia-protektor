@@ -1,4 +1,6 @@
+export type { Rol } from "@prisma/client";
 import type { Rol } from "@prisma/client";
+
 
 // ✅ Mantener Turno local (si tu Prisma usa Turno, luego lo alineamos también)
 export enum Turno {
