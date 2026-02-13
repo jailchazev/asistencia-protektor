@@ -7,7 +7,9 @@ import Button from "@/components/ui/Button";
 import Select from "@/components/ui/Select";
 import Input from "@/components/ui/Input";
 import Alert from "@/components/ui/Alert";
-import { UserSession, Asistencia, Unidad, Puesto, Usuario, Rol, Turno } from "@/types";
+import { UserSession, Asistencia, Unidad, Puesto, Usuario, Turno, ROL } from "@/types";
+import type { Rol } from "@/types";
+
 
 interface Paginacion {
   pagina: number;
@@ -224,12 +226,13 @@ export default function HistorialPage() {
   ];
 
   const rolOptions = [
-    { value: "", label: "Todos los roles" },
-    ...Object.values(Rol).map((r) => ({
-      value: r,
-      label: r.replace("_", " ").toUpperCase(),
-    })),
-  ];
+  { value: "", label: "Todos los roles" },
+  ...Object.values(ROL).map((r) => ({
+    value: r,
+    label: r.replace("_", " ").toUpperCase(),
+  })),
+];
+
 
   const turnoOptions = [
     { value: "", label: "Todos los turnos" },

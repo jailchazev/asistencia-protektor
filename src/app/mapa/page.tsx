@@ -7,7 +7,9 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import Button from "@/components/ui/Button";
 import Select from "@/components/ui/Select";
 import Alert from "@/components/ui/Alert";
-import { UserSession, Asistencia, Unidad, Puesto, Usuario, Rol, Turno, tieneAccesoMapa } from "@/types";
+import { UserSession, Asistencia, Unidad, Puesto, Usuario, Turno, tieneAccesoMapa } from "@/types";
+import type { Rol } from "@/types";
+
 
 // Importar Leaflet dinámicamente para evitar problemas de SSR
 const MapaLeaflet = dynamic(() => import("@/components/MapaLeaflet"), {

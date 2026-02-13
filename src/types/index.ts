@@ -16,7 +16,7 @@ export const ROL = {
 } as const;
 
 // ✅ Lista runtime para UI (reemplaza Object.values(Rol))
-export const ROL_VALUES: Rol[] = [
+export const ROL_VALUES = [
   ROL.admin,
   ROL.supervisor,
   ROL.agente,
@@ -26,7 +26,10 @@ export const ROL_VALUES: Rol[] = [
   ROL.asistente,
   ROL.centro_de_control,
   ROL.oficina,
-];
+] as const;
+
+export type Rol = (typeof ROL_VALUES)[number];
+
 
 // ✅ Mantener Turno local
 export enum Turno {

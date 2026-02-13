@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Rol, Turno } from "@/types";
+import { ROL_VALUES, Turno } from "@/types";
 
 export const loginSchema = z.object({
   username: z.string().min(3, "El usuario debe tener al menos 3 caracteres"),
@@ -22,14 +22,14 @@ export const crearUsuarioSchema = z.object({
     ),
   nombres: z.string().min(2, "Los nombres son obligatorios"),
   apellidos: z.string().min(2, "Los apellidos son obligatorios"),
-  rol: z.nativeEnum(Rol),
+  rol: z.enum(ROL_VALUES),
   activo: z.boolean().default(true),
 });
 
 export const actualizarUsuarioSchema = z.object({
   nombres: z.string().min(2, "Los nombres son obligatorios").optional(),
   apellidos: z.string().min(2, "Los apellidos son obligatorios").optional(),
-  rol: z.nativeEnum(Rol).optional(),
+  rol: z.enum(ROL_VALUES).optional(),
   activo: z.boolean().optional(),
   password: z
     .string()
@@ -87,7 +87,7 @@ export const filtroAsistenciaSchema = z.object({
   unidadId: z.string().optional(),
   puestoId: z.string().optional(),
   userId: z.string().optional(),
-  rol: z.nativeEnum(Rol).optional(),
+  rol: z.enum(ROL_VALUES).optional(),
   turno: z.nativeEnum(Turno).optional(),
   estado: z.enum(["solo_ingreso", "completo"]).optional(),
   ciudad: z.string().optional(),

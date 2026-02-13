@@ -9,7 +9,7 @@ import Select from "@/components/ui/Select";
 import Alert from "@/components/ui/Alert";
 
 // ✅ Import runtime correcto
-import { UserSession, Puesto, Unidad, } from "@/types";
+import { UserSession, Puesto, Unidad, ROL } from "@/types";
 
 type FormData = {
   unidadId: string;
