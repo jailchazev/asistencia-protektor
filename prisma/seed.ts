@@ -3,286 +3,344 @@ import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
+/**
+ * Reglas:
+ * - Producción: NO borrar data. Solo crear si faltan (idempotente).
+ * - Dev/Local: si SEED_RESET=true => borra todo y recrea.
+ */
+const IS_PROD = process.env.NODE_ENV === "production";
+const SEED_RESET = process.env.SEED_RESET === "true";
+
 async function main() {
   console.log("🌱 Iniciando seed...");
+  console.log(`ENV: NODE_ENV=${process.env.NODE_ENV} | SEED_RESET=${SEED_RESET}`);
 
-  // ✅ Limpiar datos existentes (orden seguro por FK)
-  await prisma.asistencia.deleteMany();
-  await prisma.usuario.deleteMany();
-  await prisma.puesto.deleteMany();
-  await prisma.unidad.deleteMany();
+  // 🚫 Producción: nunca borres
+  if (IS_PROD && SEED_RESET) {
+    console.log("🚫 SEED_RESET está activo pero estamos en producción. BLOQUEADO.");
+    return;
+  }
 
-  console.log("✅ Datos anteriores eliminados");
+  // ✅ Dev/Local: opcional reset total
+  if (!IS_PROD && SEED_RESET) {
+    console.log("🧹 SEED_RESET=true en dev/local -> limpiando datos (orden seguro FK)...");
+    await prisma.asistencia.deleteMany();
+    await prisma.usuario.deleteMany();
+    await prisma.puesto.deleteMany();
+    await prisma.unidad.deleteMany();
+    console.log("✅ Datos anteriores eliminados");
+  } else {
+    console.log("ℹ️ No se borrarán datos. Seed idempotente (crea solo si falta).");
+  }
 
-  // ========== UNIDADES ==========
-  console.log("🏢 Creando unidades...");
+  // =========================
+  // UNIDADES (upsert)
+  // =========================
+  console.log("🏢 Creando/verificando unidades...");
 
-  const unidadLima = await prisma.unidad.create({
-    data: {
+  const unidadesSeed = [
+    {
+      key: "Sede Principal Lima|Lima",
       nombre: "Sede Principal Lima",
       ciudad: "Lima",
       direccion: "Av. Javier Prado Este 1234, San Isidro",
-      activo: true,
     },
-  });
-
-  const unidadArequipa = await prisma.unidad.create({
-    data: {
+    {
+      key: "Oficina Arequipa|Arequipa",
       nombre: "Oficina Arequipa",
       ciudad: "Arequipa",
       direccion: "Calle Mercaderes 456, Centro Histórico",
-      activo: true,
     },
-  });
-
-  const unidadTrujillo = await prisma.unidad.create({
-    data: {
+    {
+      key: "Sucursal Trujillo|Trujillo",
       nombre: "Sucursal Trujillo",
       ciudad: "Trujillo",
       direccion: "Av. España 789, Centro",
-      activo: true,
     },
-  });
-
-  const unidadCusco = await prisma.unidad.create({
-    data: {
+    {
+      key: "Oficina Cusco|Cusco",
       nombre: "Oficina Cusco",
       ciudad: "Cusco",
       direccion: "Av. El Sol 321, Centro",
-      activo: true,
     },
-  });
-
-  const unidadPiura = await prisma.unidad.create({
-    data: {
+    {
+      key: "Sucursal Piura|Piura",
       nombre: "Sucursal Piura",
       ciudad: "Piura",
       direccion: "Av. Sánchez Cerro 654, Centro",
-      activo: true,
     },
-  });
-
-  const unidadChiclayo = await prisma.unidad.create({
-    data: {
+    {
+      key: "Oficina Chiclayo|Chiclayo",
       nombre: "Oficina Chiclayo",
       ciudad: "Chiclayo",
       direccion: "Av. Balta 123, Centro",
-      activo: true,
     },
-  });
-
-  const unidadIquitos = await prisma.unidad.create({
-    data: {
+    {
+      key: "Sede Iquitos|Iquitos",
       nombre: "Sede Iquitos",
       ciudad: "Iquitos",
       direccion: "Av. Abelardo Quiñones 789",
-      activo: true,
     },
+  ] as const;
+
+  // Como no sabemos si tienes constraint único en Unidad, hacemos findFirst + create/update
+  async function upsertUnidad(data: { nombre: string; ciudad: string; direccion: string }) {
+    const existing = await prisma.unidad.findFirst({
+      where: { nombre: data.nombre, ciudad: data.ciudad },
+    });
+
+    if (existing) {
+      return prisma.unidad.update({
+        where: { id: existing.id },
+        data: { direccion: data.direccion, activo: true },
+      });
+    }
+
+    return prisma.unidad.create({
+      data: { ...data, activo: true },
+    });
+  }
+
+  const unidadLima = await upsertUnidad({
+    nombre: "Sede Principal Lima",
+    ciudad: "Lima",
+    direccion: "Av. Javier Prado Este 1234, San Isidro",
   });
 
-  console.log("✅ 7 unidades creadas");
-
-  // ========== PUESTOS ==========
-  console.log("📍 Creando puestos...");
-
-  // Puestos Lima
-  const puestoLima1 = await prisma.puesto.create({
-    data: { unidadId: unidadLima.id, nombre: "Recepción Principal", activo: true },
-  });
-  await prisma.puesto.create({
-    data: { unidadId: unidadLima.id, nombre: "Vigilancia Externa", activo: true },
-  });
-  await prisma.puesto.create({
-    data: { unidadId: unidadLima.id, nombre: "Control de Acceso", activo: true },
-  });
-  await prisma.puesto.create({
-    data: { unidadId: unidadLima.id, nombre: "CCTV Centro de Control", activo: true },
-  });
-  await prisma.puesto.create({
-    data: { unidadId: unidadLima.id, nombre: "Rondas Internas", activo: true },
+  const unidadArequipa = await upsertUnidad({
+    nombre: "Oficina Arequipa",
+    ciudad: "Arequipa",
+    direccion: "Calle Mercaderes 456, Centro Histórico",
   });
 
-  // Puestos Arequipa
-  const puestoArequipa1 = await prisma.puesto.create({
-    data: { unidadId: unidadArequipa.id, nombre: "Recepción", activo: true },
-  });
-  await prisma.puesto.create({
-    data: { unidadId: unidadArequipa.id, nombre: "Vigilancia Perimetral", activo: true },
-  });
-  await prisma.puesto.create({
-    data: { unidadId: unidadArequipa.id, nombre: "Rondas Internas", activo: true },
+  const unidadTrujillo = await upsertUnidad({
+    nombre: "Sucursal Trujillo",
+    ciudad: "Trujillo",
+    direccion: "Av. España 789, Centro",
   });
 
-  // Puestos Trujillo
-  const puestoTrujillo1 = await prisma.puesto.create({
-    data: { unidadId: unidadTrujillo.id, nombre: "Portería Principal", activo: true },
-  });
-  await prisma.puesto.create({
-    data: { unidadId: unidadTrujillo.id, nombre: "Vigilancia Nocturna", activo: true },
+  const unidadCusco = await upsertUnidad({
+    nombre: "Oficina Cusco",
+    ciudad: "Cusco",
+    direccion: "Av. El Sol 321, Centro",
   });
 
-  // Puestos Cusco
-  const puestoCusco1 = await prisma.puesto.create({
-    data: { unidadId: unidadCusco.id, nombre: "Recepción", activo: true },
-  });
-  await prisma.puesto.create({
-    data: { unidadId: unidadCusco.id, nombre: "Seguridad Interna", activo: true },
+  const unidadPiura = await upsertUnidad({
+    nombre: "Sucursal Piura",
+    ciudad: "Piura",
+    direccion: "Av. Sánchez Cerro 654, Centro",
   });
 
-  // Puestos Piura
-  const puestoPiura1 = await prisma.puesto.create({
-    data: { unidadId: unidadPiura.id, nombre: "Control de Acceso", activo: true },
-  });
-  await prisma.puesto.create({
-    data: { unidadId: unidadPiura.id, nombre: "Vigilancia", activo: true },
+  const unidadChiclayo = await upsertUnidad({
+    nombre: "Oficina Chiclayo",
+    ciudad: "Chiclayo",
+    direccion: "Av. Balta 123, Centro",
   });
 
-  // Puestos Chiclayo
-  const puestoChiclayo1 = await prisma.puesto.create({
-    data: { unidadId: unidadChiclayo.id, nombre: "Recepción", activo: true },
-  });
-  await prisma.puesto.create({
-    data: { unidadId: unidadChiclayo.id, nombre: "Vigilancia", activo: true },
+  const unidadIquitos = await upsertUnidad({
+    nombre: "Sede Iquitos",
+    ciudad: "Iquitos",
+    direccion: "Av. Abelardo Quiñones 789",
   });
 
-  // Puestos Iquitos
-  const puestoIquitos1 = await prisma.puesto.create({
-    data: { unidadId: unidadIquitos.id, nombre: "Control Principal", activo: true },
-  });
-  await prisma.puesto.create({
-    data: { unidadId: unidadIquitos.id, nombre: "Vigilancia Fluvial", activo: true },
-  });
+  console.log("✅ Unidades OK");
 
-  console.log("✅ Puestos creados");
+  // =========================
+  // PUESTOS (create si no existe)
+  // =========================
+  console.log("📍 Creando/verificando puestos...");
 
-  // ========== USUARIOS ==========
-  console.log("👤 Creando usuarios...");
+  async function ensurePuesto(unidadId: string, nombre: string) {
+    const existing = await prisma.puesto.findFirst({
+      where: { unidadId, nombre },
+    });
+    if (existing) {
+      // opcional: reactivar
+      await prisma.puesto.update({
+        where: { id: existing.id },
+        data: { activo: true },
+      });
+      return existing;
+    }
+    return prisma.puesto.create({
+      data: { unidadId, nombre, activo: true },
+    });
+  }
 
-  const admin = await prisma.usuario.create({
-    data: {
-      username: "admin",
-      passwordHash: await bcrypt.hash("Admin123!", 10),
-      nombres: "Administrador",
-      apellidos: "Sistema",
-      rol: Rol.admin,
-      activo: true,
-    },
-  });
+  const puestoLima1 = await ensurePuesto(unidadLima.id, "Recepción Principal");
+  await ensurePuesto(unidadLima.id, "Vigilancia Externa");
+  await ensurePuesto(unidadLima.id, "Control de Acceso");
+  await ensurePuesto(unidadLima.id, "CCTV Centro de Control");
+  await ensurePuesto(unidadLima.id, "Rondas Internas");
 
-  const supervisor = await prisma.usuario.create({
-    data: {
-      username: "supervisor",
-      passwordHash: await bcrypt.hash("Supervisor123!", 10),
-      nombres: "Juan Carlos",
-      apellidos: "Rodríguez",
-      rol: Rol.supervisor,
-      activo: true,
-    },
-  });
+  await ensurePuesto(unidadArequipa.id, "Recepción");
+  await ensurePuesto(unidadArequipa.id, "Vigilancia Perimetral");
+  await ensurePuesto(unidadArequipa.id, "Rondas Internas");
 
-  const agente = await prisma.usuario.create({
-    data: {
-      username: "agente",
-      passwordHash: await bcrypt.hash("Agente123!", 10),
-      nombres: "Pedro Antonio",
-      apellidos: "García",
-      rol: Rol.agente,
-      activo: true,
-    },
-  });
+  await ensurePuesto(unidadTrujillo.id, "Portería Principal");
+  await ensurePuesto(unidadTrujillo.id, "Vigilancia Nocturna");
 
-  const jefe = await prisma.usuario.create({
-    data: {
-      username: "jefe",
-      passwordHash: await bcrypt.hash("Jefe123!", 10),
-      nombres: "Miguel Ángel",
-      apellidos: "López",
-      rol: Rol.jefe,
-      activo: true,
-    },
-  });
+  await ensurePuesto(unidadCusco.id, "Recepción");
+  await ensurePuesto(unidadCusco.id, "Seguridad Interna");
 
-  const gerente = await prisma.usuario.create({
-    data: {
-      username: "gerente",
-      passwordHash: await bcrypt.hash("Gerente123!", 10),
-      nombres: "Ana María",
-      apellidos: "Fernández",
-      rol: Rol.gerente,
-      activo: true,
-    },
-  });
+  await ensurePuesto(unidadPiura.id, "Control de Acceso");
+  await ensurePuesto(unidadPiura.id, "Vigilancia");
 
-  const coordinador = await prisma.usuario.create({
-    data: {
-      username: "coordinador",
-      passwordHash: await bcrypt.hash("Coordinador123!", 10),
-      nombres: "Luis Alberto",
-      apellidos: "Torres",
-      rol: Rol.coordinador,
-      activo: true,
-    },
-  });
+  await ensurePuesto(unidadChiclayo.id, "Recepción");
+  await ensurePuesto(unidadChiclayo.id, "Vigilancia");
 
-  const asistente = await prisma.usuario.create({
-    data: {
-      username: "asistente",
-      passwordHash: await bcrypt.hash("Asistente123!", 10),
-      nombres: "Carmen Rosa",
-      apellidos: "Díaz",
-      rol: Rol.asistente,
-      activo: true,
-    },
-  });
+  await ensurePuesto(unidadIquitos.id, "Control Principal");
+  await ensurePuesto(unidadIquitos.id, "Vigilancia Fluvial");
 
-  const centroControl = await prisma.usuario.create({
-    data: {
-      username: "centrocontrol",
-      passwordHash: await bcrypt.hash("Centro123!", 10),
-      nombres: "Roberto Carlos",
-      apellidos: "Vargas",
-      rol: Rol.centro_de_control,
-      activo: true,
-    },
+  console.log("✅ Puestos OK");
+
+  // =========================
+  // USUARIOS (upsert por username)
+  // =========================
+  console.log("👤 Creando/verificando usuarios...");
+
+  async function upsertUsuario(params: {
+    username: string;
+    password: string;
+    nombres: string;
+    apellidos: string;
+    rol: Rol;
+  }) {
+    const passwordHash = await bcrypt.hash(params.password, 10);
+
+    return prisma.usuario.upsert({
+      where: { username: params.username },
+      update: {
+        nombres: params.nombres,
+        apellidos: params.apellidos,
+        rol: params.rol,
+        activo: true,
+        // ⚠️ en producción NO cambiamos password si ya existe
+        ...(IS_PROD ? {} : { passwordHash }),
+      },
+      create: {
+        username: params.username,
+        passwordHash,
+        nombres: params.nombres,
+        apellidos: params.apellidos,
+        rol: params.rol,
+        activo: true,
+      },
+    });
+  }
+
+  const admin = await upsertUsuario({
+    username: "admin",
+    password: "Admin123!",
+    nombres: "Administrador",
+    apellidos: "Sistema",
+    rol: Rol.admin,
   });
 
-  const oficina = await prisma.usuario.create({
-    data: {
-      username: "oficina",
-      passwordHash: await bcrypt.hash("Oficina123!", 10),
-      nombres: "Diana Patricia",
-      apellidos: "Mendoza",
-      rol: Rol.oficina,
-      activo: true,
-    },
+  const supervisor = await upsertUsuario({
+    username: "supervisor",
+    password: "Supervisor123!",
+    nombres: "Juan Carlos",
+    apellidos: "Rodríguez",
+    rol: Rol.supervisor,
   });
 
-  console.log("✅ 9 usuarios creados");
+  const agente = await upsertUsuario({
+    username: "agente",
+    password: "Agente123!",
+    nombres: "Pedro Antonio",
+    apellidos: "García",
+    rol: Rol.agente,
+  });
 
-  // ========== ASISTENCIAS DE EJEMPLO ==========
-  console.log("📝 Creando asistencias de ejemplo...");
+  await upsertUsuario({
+    username: "jefe",
+    password: "Jefe123!",
+    nombres: "Miguel Ángel",
+    apellidos: "López",
+    rol: Rol.jefe,
+  });
+
+  await upsertUsuario({
+    username: "gerente",
+    password: "Gerente123!",
+    nombres: "Ana María",
+    apellidos: "Fernández",
+    rol: Rol.gerente,
+  });
+
+  await upsertUsuario({
+    username: "coordinador",
+    password: "Coordinador123!",
+    nombres: "Luis Alberto",
+    apellidos: "Torres",
+    rol: Rol.coordinador,
+  });
+
+  await upsertUsuario({
+    username: "asistente",
+    password: "Asistente123!",
+    nombres: "Carmen Rosa",
+    apellidos: "Díaz",
+    rol: Rol.asistente,
+  });
+
+  await upsertUsuario({
+    username: "centrocontrol",
+    password: "Centro123!",
+    nombres: "Roberto Carlos",
+    apellidos: "Vargas",
+    rol: Rol.centro_de_control,
+  });
+
+  await upsertUsuario({
+    username: "oficina",
+    password: "Oficina123!",
+    nombres: "Diana Patricia",
+    apellidos: "Mendoza",
+    rol: Rol.oficina,
+  });
+
+  console.log("✅ Usuarios OK");
+
+  // =========================
+  // ASISTENCIA DEMO (solo si no existe hoy)
+  // =========================
+  console.log("📝 Creando/verificando asistencia demo...");
 
   const hoy = new Date();
   const fechaHoy = hoy.toISOString().split("T")[0];
   const hora = hoy.getHours();
   const turnoActual = hora >= 7 && hora < 19 ? Turno.DIA : Turno.NOCHE;
 
-  await prisma.asistencia.create({
-    data: {
+  const existeDemo = await prisma.asistencia.findFirst({
+    where: {
       userId: agente.id,
-      unidadId: unidadLima.id,
-      puestoId: puestoLima1.id,
-      turno: turnoActual,
       fechaTurno: fechaHoy,
-      checkInAt: new Date(hoy.getTime() - 2 * 60 * 60 * 1000),
-      lat: -12.0464,
-      lng: -77.0428,
-      ciudadDetectada: "Lima",
-      deviceInfo: "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      turno: turnoActual,
     },
   });
 
-  console.log("✅ Asistencia demo creada");
+  if (!existeDemo) {
+    await prisma.asistencia.create({
+      data: {
+        userId: agente.id,
+        unidadId: unidadLima.id,
+        puestoId: puestoLima1.id,
+        turno: turnoActual,
+        fechaTurno: fechaHoy,
+        checkInAt: new Date(hoy.getTime() - 2 * 60 * 60 * 1000),
+        lat: -12.0464,
+        lng: -77.0428,
+        ciudadDetectada: "Lima",
+        deviceInfo: "seed",
+      },
+    });
+    console.log("✅ Asistencia demo creada");
+  } else {
+    console.log("ℹ️ Asistencia demo ya existe, no se duplica");
+  }
+
   console.log("🎉 SEED COMPLETADO EXITOSAMENTE");
 }
 
