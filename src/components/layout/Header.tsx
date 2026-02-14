@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { UserSession } from "@/types";
 import Button from "@/components/ui/Button";
+import InstallPWAButton from "@/components/pwa/InstallPWAButton";
 
 interface HeaderProps {
   user: UserSession;
@@ -16,6 +17,7 @@ export default function Header({ user, onMenuClick, onLogout }: HeaderProps) {
   return (
     <header className="bg-white shadow-sm border-b sticky top-0 z-30">
       <div className="flex items-center justify-between px-4 py-3">
+        {/* LEFT */}
         <div className="flex items-center gap-3">
           <button
             onClick={onMenuClick}
@@ -25,11 +27,13 @@ export default function Header({ user, onMenuClick, onLogout }: HeaderProps) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
+
           <h2 className="text-lg font-semibold text-gray-800 hidden sm:block">
             Bienvenido, {user.nombres}
           </h2>
         </div>
 
+        {/* RIGHT */}
         <div className="flex items-center gap-3">
           <span className="text-sm text-gray-500 hidden sm:block">
             {new Date().toLocaleDateString("es-PE", {
@@ -39,6 +43,10 @@ export default function Header({ user, onMenuClick, onLogout }: HeaderProps) {
               day: "numeric",
             })}
           </span>
+
+          {/* ✅ BOTÓN INSTALAR PWA */}
+          <InstallPWAButton />
+
           <Button
             variant="outline"
             size="sm"
@@ -52,7 +60,7 @@ export default function Header({ user, onMenuClick, onLogout }: HeaderProps) {
         </div>
       </div>
 
-      {/* Logout Confirmation Modal */}
+      {/* MODAL LOGOUT */}
       {showLogoutConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
@@ -64,9 +72,11 @@ export default function Header({ user, onMenuClick, onLogout }: HeaderProps) {
               </div>
               <h3 className="text-lg font-semibold text-gray-900">¿Cerrar sesión?</h3>
             </div>
+
             <p className="text-gray-600 mb-6">
               ¿Está seguro que desea cerrar su sesión? Deberá volver a iniciar sesión para continuar.
             </p>
+
             <div className="flex gap-3 justify-end">
               <Button
                 variant="secondary"
@@ -74,6 +84,7 @@ export default function Header({ user, onMenuClick, onLogout }: HeaderProps) {
               >
                 Cancelar
               </Button>
+
               <Button
                 variant="danger"
                 onClick={() => {

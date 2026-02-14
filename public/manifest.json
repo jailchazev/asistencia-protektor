@@ -3,6 +3,7 @@
   "short_name": "Asistencia",
   "description": "Sistema de control de asistencia para personal de seguridad",
   "start_url": "/login",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#2563eb",
